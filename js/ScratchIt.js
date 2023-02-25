@@ -17,7 +17,7 @@ function ScratchIt(){
       offsetOrigin = {x: 0, y: 0},
       scale = 1.0,
       paintQueue = [],
-      lastPoint,
+      lastPoint = {},
       rafId,
       minPointDist = 10,
       isRevealed = false,
@@ -202,15 +202,15 @@ function ScratchIt(){
     var dx, dy, dist, i, numSegments;
     tween = !!tween;
 
-    if(tween && lastPoint){
+    if(tween && lastPoint[point.pointerId]){
 
       // calc distance between current and last point added
-      dx = lastPoint.x - point.x;
-      dy = lastPoint.y - point.y;
+      dx = lastPoint[point.pointerId].x - point.x;
+      dy = lastPoint[point.pointerId].y - point.y;
       dist = Math.sqrt(dx*dx + dy*dy);
 
       // if distance is too large, add points in between
-      if(dist > minPointDist){
+      if(dist > minPointDist) {
         numSegments = Math.ceil(dist / minPointDist);
         dx = dx / numSegments;
         dy = dy / numSegments;
@@ -220,7 +220,8 @@ function ScratchIt(){
             x: Math.round(point.x + (i * dx)),
             y: Math.round(point.y + (i * dy)),
             width: point.width > 1 ? point.width : 50,
-            height: point.height > 1 ? point.height : 50
+            height: point.height > 1 ? point.height : 50,
+            pointerId: point.pointerId
           });
         }
       }
@@ -230,9 +231,10 @@ function ScratchIt(){
       x: Math.round(point.x),
       y: Math.round(point.y),
       width: point.width > 1 ? point.width : 50,
-      height: point.height > 1 ? point.height : 50
+      height: point.height > 1 ? point.height : 50,
+      pointerId: point.pointerId
     };
-    lastPoint = point;
+    lastPoint[point.pointerId] = point;
     paintQueue.push(point);
   };
 
@@ -271,6 +273,7 @@ function ScratchIt(){
       y: offsetOrigin.y * scale,
       width: event.width,
       height: event.height,
+      pointerId: event.pointerId || 0
     });
   };
 
@@ -291,7 +294,8 @@ function ScratchIt(){
       x: (offsetOrigin.x + (pointerPosition.x - pointerOrigin.x)) * scale,
       y: (offsetOrigin.y + (pointerPosition.y - pointerOrigin.y)) * scale,
       width: event.width,
-      height: event.height
+      height: event.height,
+      pointerId: event.pointerId || 0
     }, true);
   };
 
@@ -308,7 +312,7 @@ function ScratchIt(){
 
     isPointerDown = false;
 
-    lastPoint = void(0);
+    delete lastPoint[event.pointerId || 0];
     pointerOrigin = {x:0,y:0};
     offsetOrigin = {x:0,y:0};
 
