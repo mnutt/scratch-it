@@ -141,10 +141,12 @@ function ScratchIt(){
    * @return {void}
    */
   var draw = function(){
-    var point;
+    var point, width, height;
     while(paintQueue.length){
       point = paintQueue.shift();
-      overlayCtx.drawImage(brushCanvas, point.x - brushCanvas.width / 2, point.y - brushCanvas.height/ 2);
+      width = brushCanvas.width * (point.width / 30);
+      height = brushCanvas.height * (point.height / 30);
+      overlayCtx.drawImage(brushCanvas, point.x - width / 2, point.y - height / 2, width, height);
     }
 
     rafId = window.requestAnimationFrame(draw);
@@ -216,7 +218,9 @@ function ScratchIt(){
         for(i = 1; i < (numSegments); i++){
           paintQueue.push({
             x: Math.round(point.x + (i * dx)),
-            y: Math.round(point.y + (i * dy))
+            y: Math.round(point.y + (i * dy)),
+            width: point.width > 1 ? point.width : 50,
+            height: point.height > 1 ? point.height : 50
           });
         }
       }
@@ -224,7 +228,9 @@ function ScratchIt(){
 
     point = {
       x: Math.round(point.x),
-      y: Math.round(point.y)
+      y: Math.round(point.y),
+      width: point.width > 1 ? point.width : 50,
+      height: point.height > 1 ? point.height : 50
     };
     lastPoint = point;
     paintQueue.push(point);
@@ -262,7 +268,9 @@ function ScratchIt(){
 
     addPoint({
       x: offsetOrigin.x * scale,
-      y: offsetOrigin.y * scale
+      y: offsetOrigin.y * scale,
+      width: event.width,
+      height: event.height,
     });
   };
 
@@ -276,11 +284,14 @@ function ScratchIt(){
   var onPointerMove = function(event){
     if(!isPointerDown){ return; }
     cancelEvent(event);
+    console.log("w", event.width);
 
     var pointerPosition = getPointFromEvent(event);
     addPoint({
       x: (offsetOrigin.x + (pointerPosition.x - pointerOrigin.x)) * scale,
-      y: (offsetOrigin.y + (pointerPosition.y - pointerOrigin.y)) * scale
+      y: (offsetOrigin.y + (pointerPosition.y - pointerOrigin.y)) * scale,
+      width: event.width,
+      height: event.height
     }, true);
   };
 
