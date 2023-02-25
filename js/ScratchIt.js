@@ -335,6 +335,8 @@ function ScratchIt(){
 
     if(isRevealed){ return; }
 
+    // This may fail if the overlay was fetched without CORS, not
+    // much we can do about that
     pixels = overlayCtx.getImageData(0, 0, overlayCanvas.width, overlayCanvas.height);
     for(i = 0; i < pixels.data.length; i += 4){
       if(pixels.data[i+3] <= alphaThreshold){
@@ -423,7 +425,7 @@ function ScratchIt(){
    * @param {function} callback 
    * @return {void}
    */
-  var getCanvasFromImage = function(imgUrl, callback){
+  var getCanvasFromImage = function(imgUrl, callback, tryCrossOrigin = true){
     var image;
 
     // bailout if the user didn't supply a valid callback, image URL, the browser doesn't support 
@@ -446,10 +448,14 @@ function ScratchIt(){
     };
 
     image.onerror = function(){
-      callback(false);
+      if (tryCrossOrigin) {
+        getCanvasFromImage(imgUrl, callback, false);
+      } else {
+        callback(false);
+      }
     };
 
-    if(!isSameOrigin(imgUrl)){
+    if(tryCrossOrigin && !isSameOrigin(imgUrl)){
       image.crossOrigin = '';
     }
 
