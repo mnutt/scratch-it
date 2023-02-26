@@ -37,7 +37,7 @@ function ScratchIt(){
    * @throws {Exception} On any invalid argument
    * @return {void}
    */
-  var construct = function(el, overlayUrl, brushUrl){
+  var construct = function(el, overlayUrlOrImg, brushUrl){
     parentEl = el;
 
     var callback = arguments.length > 3 ? arguments[3] : function(){};
@@ -56,14 +56,27 @@ function ScratchIt(){
     revealCallback = callback;
     revealThreshold = threshold;
 
-    getCanvasFromImage(overlayUrl, function(canvas){
-      overlayLoaded = true;
-      overlayCanvas = canvas;
-      onCanvasLoaded();
-    });
-    getCanvasFromImage(brushUrl, function(canvas){
+    if (typeof overlayUrlOrImg === 'string') {
+      getCanvasFromImageUrl(overlayUrlOrImg, function(canvas){
+        overlayLoaded = true;
+        overlayCanvas = canvas;
+        onCanvasLoaded();
+      });
+    } else if (typeof overlayUrlOrImg === 'object' && overlayUrlOrImg.src) {
+      getCanvasFromImage(overlayUrlOrImg, function(canvas) {
+        overlayLoaded = true;
+        overlayCanvas = canvas;
+        onCanvasLoaded();
+        overlayUrlOrImg.style.display = 'none';
+      })
+    } else {
+      throw 'ScratchIt() requires overlay to be an image element or URL';
+    }
+
+    getCanvasFromImageUrl(brushUrl, function(canvas){
       brushLoaded = true;
       brushCanvas = canvas;
+
       onCanvasLoaded();
     });
   };
@@ -287,7 +300,6 @@ function ScratchIt(){
   var onPointerMove = function(event){
     if(!isPointerDown){ return; }
     cancelEvent(event);
-    console.log("w", event.width);
 
     var pointerPosition = getPointFromEvent(event);
     addPoint({
@@ -419,48 +431,50 @@ function ScratchIt(){
    * Loads an image into a canvas object
    * 
    * @private
-   * @param {string} imgUrl The source image URL. Remember that domain policies apply to working with 
-   *   images on canvas. The image may need to have appropriate CORS headers set or be served from the same 
-   *   domain as your application.
+   * @param {string|Image} imgUrlOrImg The source image URL or Image. Remember that domain policies apply to
+   *   working with images on canvas. The image may need to have appropriate CORS headers set or be served
+   *   from the same domain as your application.
    * @param {function} callback 
    * @return {void}
    */
-  var getCanvasFromImage = function(imgUrl, callback, tryCrossOrigin = true){
-    var image;
+  var getCanvasFromImageUrl = function(imgUrl, callback){
+    var image = new Image();
 
-    // bailout if the user didn't supply a valid callback, image URL, the browser doesn't support 
-    // canvas or we are unable to return the canvas as the requested data uri string
-    if(typeof imgUrl !== 'string' || typeof callback !== 'function'){
-      callback(false);
-      return;
-    }
-
-    image = new Image();
-
-    image.onload = function(){
-      // IE9 needs a breather before it will reliably get the contents of the image to paint to the canvas
-      if(isIE9()){
-        setTimeout(function(){ callback(imageToCanvas(image)); }, 300);
-      }
-      else{
-        callback(imageToCanvas(image));
-      }
-    };
-
-    image.onerror = function(){
-      if (tryCrossOrigin) {
-        getCanvasFromImage(imgUrl, callback, false);
-      } else {
-        callback(false);
-      }
-    };
-
-    if(tryCrossOrigin && !isSameOrigin(imgUrl)){
+    if(!isSameOrigin(imgUrl)){
       image.crossOrigin = '';
     }
 
     image.src = imgUrl;
+
+    getCanvasFromImage(image, callback);
   };
+
+  var getCanvasFromImage = function(image, callback) {
+    if (image.naturalWidth) {
+      // Already loaded
+      callback(imageToCanvas(image));
+      return;
+    } else {
+      image.onload = function(){
+        // IE9 needs a breather before it will reliably get the contents of the image to paint to the canvas
+        if(isIE9()){
+          setTimeout(function(){ callback(imageToCanvas(image)); }, 300);
+        }
+        else{
+          callback(imageToCanvas(image));
+        }
+      };
+    }
+
+    image.onerror = function(){
+      if (image.crossOrigin !== undefined) {
+        delete image.crossOrigin;
+        getCanvasFromImage(imgUrlOrImg, callback);
+      } else {
+        callback(false);
+      }
+    };
+  }
 
   /**
    * Tests whether a supplied URL shares the same origin (protocol and domain) as the current page.
