@@ -1,33 +1,31 @@
 /**
  * A javascript library that simulates a scratch off lottery ticket. It's responsive and is mobile friendly.
- * 
+ *
  * @author Aaron Graham
  */
-function ScratchIt(){
-
+function ScratchIt() {
   var parentEl,
-      overlayCanvas,
-      overlayCtx,
-      brushCanvas,
-      brushCtx,
-      overlayLoaded = false,
-      brushLoaded = false,
-      isPointerDown = false,
-      pointerOrigin = {x: 0, y: 0},
-      offsetOrigin = {x: 0, y: 0},
-      scale = 1.0,
-      paintQueue = [],
-      lastPoint = {},
-      rafId,
-      minPointDist = 10,
-      isRevealed = false,
-      revealThreshold,
-      revealCallback
-  ;
+    overlayCanvas,
+    overlayCtx,
+    brushCanvas,
+    brushCtx,
+    overlayLoaded = false,
+    brushLoaded = false,
+    isPointerDown = false,
+    pointerOrigin = { x: 0, y: 0 },
+    offsetOrigin = { x: 0, y: 0 },
+    scale = 1.0,
+    paintQueue = [],
+    lastPoint = {},
+    rafId,
+    minPointDist = 10,
+    isRevealed = false,
+    revealThreshold,
+    revealCallback;
 
   /**
    * Constructor
-   * 
+   *
    * @constructor
    * @param {DOMElement} el The parent DOM element that the canvas will be appended to
    * @param {String} overlayUrl The URL to the image which will be displayed
@@ -40,107 +38,111 @@ function ScratchIt(){
   function construct(el, overlayUrlOrImg, brushUrl) {
     parentEl = el;
 
-    var callback = arguments.length > 3 ? arguments[3] : function(){};
-    var threshold = arguments.length > 4 ? arguments[4]*1 : 0;
+    var callback = arguments.length > 3 ? arguments[3] : function () {};
+    var threshold = arguments.length > 4 ? arguments[4] * 1 : 0;
 
-    if(!isDomElement(parentEl)){
-      throw 'ScratchIt() requires parent element to be a valid DOM Element."'
+    if (!isDomElement(parentEl)) {
+      throw 'ScratchIt() requires parent element to be a valid DOM Element."';
     }
-    if(typeof callback !== 'function'){
-      throw 'ScratchIt() requires callback to be a function';
+    if (typeof callback !== "function") {
+      throw "ScratchIt() requires callback to be a function";
     }
-    if(threshold < 0 || threshold > 100){
-      throw 'ScratchIt() requires threshold to be between 0-100';
+    if (threshold < 0 || threshold > 100) {
+      throw "ScratchIt() requires threshold to be between 0-100";
     }
 
     revealCallback = callback;
     revealThreshold = threshold;
 
-    if (typeof overlayUrlOrImg === 'string') {
-      getCanvasFromImageUrl(overlayUrlOrImg, function(canvas){
+    if (typeof overlayUrlOrImg === "string") {
+      getCanvasFromImageUrl(overlayUrlOrImg, function (canvas) {
         overlayLoaded = true;
         overlayCanvas = canvas;
         onCanvasLoaded();
       });
-    } else if (typeof overlayUrlOrImg === 'object' && overlayUrlOrImg.src) {
-      getCanvasFromImage(overlayUrlOrImg, function(canvas) {
+    } else if (typeof overlayUrlOrImg === "object" && overlayUrlOrImg.src) {
+      getCanvasFromImage(overlayUrlOrImg, function (canvas) {
         overlayLoaded = true;
         overlayCanvas = canvas;
         onCanvasLoaded();
-        overlayUrlOrImg.style.display = 'none';
-      })
+        overlayUrlOrImg.style.display = "none";
+      });
     } else {
-      throw 'ScratchIt() requires overlay to be an image element or URL';
+      throw "ScratchIt() requires overlay to be an image element or URL";
     }
 
-    getCanvasFromImageUrl(brushUrl, function(canvas){
+    getCanvasFromImageUrl(brushUrl, function (canvas) {
       brushLoaded = true;
       brushCanvas = canvas;
 
       onCanvasLoaded();
     });
-  };
+  }
 
   /**
    * Tests whether something is a DOM Element
-   * 
+   *
    * @private
    * @param {Object} el
    * @returns {Boolean}
    */
-  function isDomElement(el){
-    return typeof HTMLElement === 'object' ? el instanceof HTMLElement : //DOM2
-      el && typeof el === 'object' && el !== null && el.nodeType === 1 && typeof el.nodeName === 'string';
-  };
+  function isDomElement(el) {
+    return typeof HTMLElement === "object"
+      ? el instanceof HTMLElement //DOM2
+      : el &&
+          typeof el === "object" &&
+          el !== null &&
+          el.nodeType === 1 &&
+          typeof el.nodeName === "string";
+  }
 
   /**
    * Event handler called after an image has been loaded into a canvas. Once all canvases are loaded,
    * the function initializes everything required for the scratchIt widget to work.
-   * 
+   *
    * @private
    * @return {void}
    */
-  var onCanvasLoaded = function(){
+  var onCanvasLoaded = function () {
     var body = document.body;
 
     // don't do any work until both brush and overlay have been attempted to be fetched
-    if(!(overlayLoaded && brushLoaded)){
+    if (!(overlayLoaded && brushLoaded)) {
       return;
     }
 
     // log error if either of them failed
-    if(!(overlayCanvas && brushCanvas)){
-      console.error('Failed to load ScratchIt image');
+    if (!(overlayCanvas && brushCanvas)) {
+      console.error("Failed to load image");
       return;
     }
 
     // Build and initialize the widget
     parentEl.appendChild(overlayCanvas);
 
-    overlayCtx = overlayCanvas.getContext('2d');
-    brushCtx = brushCanvas.getContext('2d');
+    overlayCtx = overlayCanvas.getContext("2d");
+    brushCtx = brushCanvas.getContext("2d");
 
-    overlayCtx.globalCompositeOperation = 'destination-out';
+    overlayCtx.globalCompositeOperation = "destination-out";
     minPointDist = brushCanvas.width / 2;
 
-    if(window.PointerEvent){
-      overlayCanvas.addEventListener('pointerdown', onPointerDown);
-      body.addEventListener('pointerup', onPointerUp);
-      body.addEventListener('pointerleave', onPointerUp);
-      body.addEventListener('pointermove', onPointerMove);
-    }
-    else{
-      overlayCanvas.addEventListener('mousedown', onPointerDown);
-      body.addEventListener('mouseup', onPointerUp);
-      body.addEventListener('mouseleave', onPointerUp);
-      body.addEventListener('mousemove', onPointerMove);
+    if (window.PointerEvent) {
+      overlayCanvas.addEventListener("pointerdown", onPointerDown);
+      body.addEventListener("pointerup", onPointerUp);
+      body.addEventListener("pointerleave", onPointerUp);
+      body.addEventListener("pointermove", onPointerMove);
+    } else {
+      overlayCanvas.addEventListener("mousedown", onPointerDown);
+      body.addEventListener("mouseup", onPointerUp);
+      body.addEventListener("mouseleave", onPointerUp);
+      body.addEventListener("mousemove", onPointerMove);
 
-      overlayCanvas.addEventListener('touchstart', onPointerDown);
-      body.addEventListener('touchend', onPointerUp);
-      body.addEventListener('touchmove', onPointerMove);
+      overlayCanvas.addEventListener("touchstart", onPointerDown);
+      body.addEventListener("touchend", onPointerUp);
+      body.addEventListener("touchmove", onPointerMove);
     }
 
-    window.addEventListener('resize', debounce(onResize, 200));
+    window.addEventListener("resize", debounce(onResize, 200));
 
     onResize();
 
@@ -149,17 +151,23 @@ function ScratchIt(){
 
   /**
    * This function is called by RAF and is responsible for painting to the canvas
-   * 
+   *
    * @private
    * @return {void}
    */
-  var draw = function(){
+  var draw = function () {
     var point, width, height;
-    while(paintQueue.length){
+    while (paintQueue.length) {
       point = paintQueue.shift();
       width = brushCanvas.width * (point.width / 30);
       height = brushCanvas.height * (point.height / 30);
-      overlayCtx.drawImage(brushCanvas, point.x - width / 2, point.y - height / 2, width, height);
+      overlayCtx.drawImage(
+        brushCanvas,
+        point.x - width / 2,
+        point.y - height / 2,
+        width,
+        height
+      );
     }
 
     rafId = window.requestAnimationFrame(draw);
@@ -168,8 +176,8 @@ function ScratchIt(){
   /**
    * Returns a function, that, as long as it continues to be invoked, will not
    * be triggered. The function will be called after it stops being called for
-   * N milliseconds. 
-   * 
+   * N milliseconds.
+   *
    * @private
    * @see http://davidwalsh.name/javascript-debounce-function
    * @param {Function} func The function to debounce.
@@ -177,11 +185,12 @@ function ScratchIt(){
    * @param {Bool} immediate If `immediate` is passed, trigger the function on the leading edge, instead of the trailing.
    * @returns {Function}
    */
-  var debounce = function(func, wait, immediate){
+  var debounce = function (func, wait, immediate) {
     var timeout;
-    return function() {
-      var context = this, args = arguments;
-      var later = function() {
+    return function () {
+      var context = this,
+        args = arguments;
+      var later = function () {
         timeout = null;
         if (!immediate) func.apply(context, args);
       };
@@ -195,46 +204,45 @@ function ScratchIt(){
   /**
    * Event handler called when the browser window is resized. Keeps track of the scale of the parent element
    * so pointer events can be scaled and drawn properly regardless of the element's size.
-   * 
+   *
    * @private
    * @return {void}
    */
-  var onResize = function(){
+  var onResize = function () {
     scale = 1 / (parentEl.getBoundingClientRect().width / overlayCanvas.width);
   };
 
   /**
    * Helper method for adding a new point to the queue of points which must be drawn to the overlay.
-   * 
+   *
    * @private
    * @param {Object} point The pre-scaled x,y coordinates to draw the brush
    * @param {Bool} tween Specifies whether additional points should be drawn between the last point. (in case pointer events are widely spread apart. cursor or finger is swiping fast)
    * @return {void}
    */
-  var addPoint = function(point, tween){
+  var addPoint = function (point, tween) {
     var dx, dy, dist, i, numSegments;
     tween = !!tween;
 
-    if(tween && lastPoint[point.pointerId]){
-
+    if (tween && lastPoint[point.pointerId]) {
       // calc distance between current and last point added
       dx = lastPoint[point.pointerId].x - point.x;
       dy = lastPoint[point.pointerId].y - point.y;
-      dist = Math.sqrt(dx*dx + dy*dy);
+      dist = Math.sqrt(dx * dx + dy * dy);
 
       // if distance is too large, add points in between
-      if(dist > minPointDist) {
+      if (dist > minPointDist) {
         numSegments = Math.ceil(dist / minPointDist);
         dx = dx / numSegments;
         dy = dy / numSegments;
 
-        for(i = 1; i < (numSegments); i++){
+        for (i = 1; i < numSegments; i++) {
           paintQueue.push({
-            x: Math.round(point.x + (i * dx)),
-            y: Math.round(point.y + (i * dy)),
+            x: Math.round(point.x + i * dx),
+            y: Math.round(point.y + i * dy),
             width: point.width > 1 ? point.width : 50,
             height: point.height > 1 ? point.height : 50,
-            pointerId: point.pointerId
+            pointerId: point.pointerId,
           });
         }
       }
@@ -245,7 +253,7 @@ function ScratchIt(){
       y: Math.round(point.y),
       width: point.width > 1 ? point.width : 50,
       height: point.height > 1 ? point.height : 50,
-      pointerId: point.pointerId
+      pointerId: point.pointerId,
     };
     lastPoint[point.pointerId] = point;
     paintQueue.push(point);
@@ -253,25 +261,25 @@ function ScratchIt(){
 
   /**
    * Utility method for canceling a browser event. Prevents default behavior and event bubbling.
-   * 
+   *
    * @private
    * @param {Event} event
    * @return {void}
    */
-  var cancelEvent = function(event){
+  var cancelEvent = function (event) {
     event.preventDefault();
     event.cancelBubble = true;
     event.stopPropagation();
   };
 
   /**
-   * Event handler called when a user touches/clicks the overlay canvas. 
-   * 
+   * Event handler called when a user touches/clicks the overlay canvas.
+   *
    * @private
    * @param {Event} event
    * @return {void}
    */
-  var onPointerDown = function(event){
+  var onPointerDown = function (event) {
     cancelEvent(event);
 
     isPointerDown = true;
@@ -286,77 +294,92 @@ function ScratchIt(){
       y: offsetOrigin.y * scale,
       width: event.width,
       height: event.height,
-      pointerId: event.pointerId || 0
+      pointerId: event.pointerId || 0,
     });
   };
 
   /**
    * Event handler called when a user has started drawing/touching the canvas.
-   * 
+   *
    * @private
    * @param {Event} event
    * @return {void}
    */
-  var onPointerMove = function(event){
-    if(!isPointerDown){ return; }
+  var onPointerMove = function (event) {
+    if (!isPointerDown) {
+      return;
+    }
     cancelEvent(event);
 
     var pointerPosition = getPointFromEvent(event);
-    addPoint({
-      x: (offsetOrigin.x + (pointerPosition.x - pointerOrigin.x)) * scale,
-      y: (offsetOrigin.y + (pointerPosition.y - pointerOrigin.y)) * scale,
-      width: event.width,
-      height: event.height,
-      pointerId: event.pointerId || 0
-    }, true);
+    addPoint(
+      {
+        x: (offsetOrigin.x + (pointerPosition.x - pointerOrigin.x)) * scale,
+        y: (offsetOrigin.y + (pointerPosition.y - pointerOrigin.y)) * scale,
+        width: event.width,
+        height: event.height,
+        pointerId: event.pointerId || 0,
+      },
+      true
+    );
   };
 
   /**
    * Event handler called when a user has released mouse click or removed finger from canvas.
-   * 
+   *
    * @private
    * @param {Event} event
    * @return {void}
    */
-  var onPointerUp = function(event){
-    if(!isPointerDown){ return; }
+  var onPointerUp = function (event) {
+    if (!isPointerDown) {
+      return;
+    }
     cancelEvent(event);
 
     isPointerDown = false;
 
     delete lastPoint[event.pointerId || 0];
-    pointerOrigin = {x:0,y:0};
-    offsetOrigin = {x:0,y:0};
+    pointerOrigin = { x: 0, y: 0 };
+    offsetOrigin = { x: 0, y: 0 };
 
     testRevealed();
   };
 
   /**
-   * Utility method that tests the percentage of pixels of the overlay image that have been revealed. A pixel is 
+   * Utility method that tests the percentage of pixels of the overlay image that have been revealed. A pixel is
    * considered revealed if it is more than 50% transparent. If a threshold is reached, the user's reveal callback
    * function is called once.
-   * 
+   *
    * @private
    * @return {void}
    */
-  var testRevealed = function(){
-    var pixels, i,
-        numVisible = 0,
-        alphaThreshold = 128,
-        totalPixels = overlayCanvas.width * overlayCanvas.height;
+  var testRevealed = function () {
+    var pixels,
+      i,
+      numVisible = 0,
+      alphaThreshold = 128,
+      totalPixels = overlayCanvas.width * overlayCanvas.height;
 
-    if(isRevealed){ return; }
+    if (isRevealed) {
+      return;
+    }
 
     // This may fail if the overlay was fetched without CORS, not
     // much we can do about that
-    pixels = overlayCtx.getImageData(0, 0, overlayCanvas.width, overlayCanvas.height);
-    for(i = 0; i < pixels.data.length; i += 4){
-      if(pixels.data[i+3] <= alphaThreshold){
+    pixels = overlayCtx.getImageData(
+      0,
+      0,
+      overlayCanvas.width,
+      overlayCanvas.height
+    );
+    for (i = 0; i < pixels.data.length; i += 4) {
+      if (pixels.data[i + 3] <= alphaThreshold) {
         numVisible++;
       }
     }
 
-    if((numVisible / totalPixels * 100) >= revealThreshold){
+    if ((numVisible / totalPixels) * 100 >= revealThreshold) {
       revealCallback();
       isRevealed = true;
     }
@@ -364,39 +387,42 @@ function ScratchIt(){
 
   /**
    * This function returns an object with X & Y values from the pointer event
-   * 
+   *
    * @param {Event} event
    * @returns {Object} Contains mouse x,y coords
    */
-  var getPointFromEvent = function(event){
+  var getPointFromEvent = function (event) {
     return {
-      x: (event.targetTouches ? event.targetTouches[0].clientX : event.clientX),
-      y: (event.targetTouches ? event.targetTouches[0].clientY : event.clientY)
+      x: event.targetTouches ? event.targetTouches[0].clientX : event.clientX,
+      y: event.targetTouches ? event.targetTouches[0].clientY : event.clientY,
     };
   };
 
   /**
    * Utility method to get mouse coordinates relative to the element that captured the event.
-   * 
+   *
    * @param {Event} event The event object
    * @returns {Object} Contains mouse x,y coords
    */
-  var getOffsetPointFromEvent = function(event){
-    var offsetX, offsetY,
-        currentElement = event.target,
-        totalOffsetX = 0,
-        totalOffsetY = 0;
+  var getOffsetPointFromEvent = function (event) {
+    var offsetX,
+      offsetY,
+      currentElement = event.target,
+      totalOffsetX = 0,
+      totalOffsetY = 0;
 
-    if(typeof event.offsetX === 'number'){
+    if (typeof event.offsetX === "number") {
       offsetX = event.offsetX;
       offsetY = event.offsetY;
-    }
-    else if(event.originalEvent && typeof event.originalEvent.layerX === 'number'){
+    } else if (
+      event.originalEvent &&
+      typeof event.originalEvent.layerX === "number"
+    ) {
       offsetX = event.oritinalEvent.layerX;
       offsetY = event.oritinalEvent.layerY;
     }
     // safari on iOS has no easy way to get the event coordinates relative to the canvas...
-    else{
+    else {
       var rect = overlayCanvas.getBoundingClientRect();
       //alert(rect.top+','+rect.left+','+rect.width+','+rect.height);
       /*
@@ -413,41 +439,41 @@ function ScratchIt(){
       offsetY = event.touches[0].clientY - rect.top;
     }
 
-    return {x : offsetX, y : offsetY};
+    return { x: offsetX, y: offsetY };
   };
 
   /**
    * Tests whether the current browser is Internet Explorer 9
-   * 
+   *
    * @private
    * @returns {bool}
    */
   function isIE9() {
     var av = navigator.appVersion;
-    return (av.indexOf("MSIE") !== -1 && parseFloat(av.split("MSIE")[1]) <= 9);
-  };
+    return av.indexOf("MSIE") !== -1 && parseFloat(av.split("MSIE")[1]) <= 9;
+  }
 
   /**
    * Loads an image into a canvas object
-   * 
+   *
    * @private
    * @param {string|Image} imgUrlOrImg The source image URL or Image. Remember that domain policies apply to
    *   working with images on canvas. The image may need to have appropriate CORS headers set or be served
    *   from the same domain as your application.
-   * @param {function} callback 
+   * @param {function} callback
    * @return {void}
    */
   function getCanvasFromImageUrl(imgUrl, callback) {
     var image = new Image();
 
-    if(!isSameOrigin(imgUrl)) {
-      image.crossOrigin = '';
+    if (!isSameOrigin(imgUrl)) {
+      image.crossOrigin = "";
     }
 
     image.src = imgUrl;
 
     getCanvasFromImage(image, callback);
-  };
+  }
 
   function getCanvasFromImage(image, callback) {
     if (image.naturalWidth) {
@@ -455,18 +481,19 @@ function ScratchIt(){
       callback(imageToCanvas(image));
       return;
     } else {
-      image.onload = function(){
+      image.onload = function () {
         // IE9 needs a breather before it will reliably get the contents of the image to paint to the canvas
-        if(isIE9()){
-          setTimeout(function(){ callback(imageToCanvas(image)); }, 300);
-        }
-        else{
+        if (isIE9()) {
+          setTimeout(function () {
+            callback(imageToCanvas(image));
+          }, 300);
+        } else {
           callback(imageToCanvas(image));
         }
       };
     }
 
-    image.onerror = function(){
+    image.onerror = function () {
       if (image.crossOrigin !== undefined) {
         delete image.crossOrigin;
         getCanvasFromImage(imgUrlOrImg, callback);
@@ -478,29 +505,33 @@ function ScratchIt(){
 
   /**
    * Tests whether a supplied URL shares the same origin (protocol and domain) as the current page.
-   * 
+   *
    * @private
    * @param {string} url The URL to test
    * @returns {bool}
    */
-  var isSameOrigin = function(url){
+  var isSameOrigin = function (url) {
     var l = window.location;
-    try{
-      return ((new URL(url)).origin === l.origin);
-    }
-    catch(ex){
-      var a = document.createElement('A'),
-          urlOrigin, winOrigin;
+    try {
+      return new URL(url).origin === l.origin;
+    } catch (ex) {
+      var a = document.createElement("A"),
+        urlOrigin,
+        winOrigin;
 
-      // attach an anchor tag to the document with the URL to test. this allows us to get access to the 
+      // attach an anchor tag to the document with the URL to test. this allows us to get access to the
       // various pieces that comprise the URL
       a.href = url;
       document.head.appendChild(a);
       a.href = a.href; // relative URL's seem to need a refresh here to properly get the URL pieces in IE
 
       // create normalized origins by stripping off a port number and forcing to lower case
-      urlOrigin = (a.protocol+'//'+a.host).replace(/:\d+/,'').toLowerCase();
-      winOrigin = (l.protocol+'//'+l.host).replace(/:\d+/,'').toLowerCase();
+      urlOrigin = (a.protocol + "//" + a.host)
+        .replace(/:\d+/, "")
+        .toLowerCase();
+      winOrigin = (l.protocol + "//" + l.host)
+        .replace(/:\d+/, "")
+        .toLowerCase();
 
       // clean up the anchor tag
       document.head.removeChild(a);
@@ -510,38 +541,41 @@ function ScratchIt(){
   };
 
   /**
-   * Paints an image to a canvas 
-   * 
+   * Paints an image to a canvas
+   *
    * @private
    * @param {object} img The source <img> DOM element
    * @param {function} callback Function to call after the image has been drawn to the canvas
    * @returns {void}
    */
-  var imageToCanvas = function(img){
-    var canvas = document.createElement('CANVAS'),
-        ctx = canvas.getContext('2d'),
-        w = img.naturalWidth,
-        h = img.naturalHeight;
+  var imageToCanvas = function (img) {
+    var canvas = document.createElement("CANVAS"),
+      ctx = canvas.getContext("2d"),
+      w = img.naturalWidth,
+      h = img.naturalHeight;
 
     canvas.width = w;
     canvas.height = h;
 
-    ctx.drawImage(img, 0, 0, w, h); 
+    ctx.drawImage(img, 0, 0, w, h);
     return canvas;
   };
 
-
   construct.apply(this, arguments);
-};
+}
 
 /**
-* Tests whether the browser has the capabilties necessary to use this library. (requires canvas and RAF support)
-* 
-* @public
-* @static
-* @return {Boolean}
-*/
-ScratchIt.isSupported = function(){
-  var canvas = document.createElement('CANVAS');
-  return !!(typeof window.requestAnimationFrame === 'function' && canvas.getContext && canvas.getContext('2d'));
+ * Tests whether the browser has the capabilties necessary to use this library. (requires canvas and RAF support)
+ *
+ * @public
+ * @static
+ * @return {Boolean}
+ */
+ScratchIt.isSupported = function () {
+  var canvas = document.createElement("CANVAS");
+  return !!(
+    typeof window.requestAnimationFrame === "function" &&
+    canvas.getContext &&
+    canvas.getContext("2d")
+  );
 };
