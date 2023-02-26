@@ -37,7 +37,7 @@ function ScratchIt(){
    * @throws {Exception} On any invalid argument
    * @return {void}
    */
-  var construct = function(el, overlayUrlOrImg, brushUrl){
+  function construct(el, overlayUrlOrImg, brushUrl) {
     parentEl = el;
 
     var callback = arguments.length > 3 ? arguments[3] : function(){};
@@ -88,7 +88,7 @@ function ScratchIt(){
    * @param {Object} el
    * @returns {Boolean}
    */
-  var isDomElement = function(el){
+  function isDomElement(el){
     return typeof HTMLElement === 'object' ? el instanceof HTMLElement : //DOM2
       el && typeof el === 'object' && el !== null && el.nodeType === 1 && typeof el.nodeName === 'string';
   };
@@ -422,7 +422,7 @@ function ScratchIt(){
    * @private
    * @returns {bool}
    */
-  var isIE9 = function(){
+  function isIE9() {
     var av = navigator.appVersion;
     return (av.indexOf("MSIE") !== -1 && parseFloat(av.split("MSIE")[1]) <= 9);
   };
@@ -437,10 +437,10 @@ function ScratchIt(){
    * @param {function} callback 
    * @return {void}
    */
-  var getCanvasFromImageUrl = function(imgUrl, callback){
+  function getCanvasFromImageUrl(imgUrl, callback) {
     var image = new Image();
 
-    if(!isSameOrigin(imgUrl)){
+    if(!isSameOrigin(imgUrl)) {
       image.crossOrigin = '';
     }
 
@@ -449,7 +449,7 @@ function ScratchIt(){
     getCanvasFromImage(image, callback);
   };
 
-  var getCanvasFromImage = function(image, callback) {
+  function getCanvasFromImage(image, callback) {
     if (image.naturalWidth) {
       // Already loaded
       callback(imageToCanvas(image));
